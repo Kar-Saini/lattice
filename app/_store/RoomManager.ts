@@ -1,4 +1,4 @@
-import { Room, User } from "./Room";
+import { Room } from "./Room";
 
 export class RoomManager {
   private static instance: RoomManager;
@@ -10,23 +10,16 @@ export class RoomManager {
     return this.instance;
   }
 
-  create_room() {
-    const room = new Room();
+  create_room(rtcSession: RTCSessionDescription) {
+    const room = new Room(rtcSession);
     this.rooms.push(room);
     return { msg: "Room created", room };
   }
 
-  join_room(room_id: string) {
+  join_room(room_id: string, rtcSession: RTCSessionDescription) {
     const room = this.rooms.find((room) => room.room_id === room_id);
     if (!room) return { msg: "Room not found" };
-    const res = room.add_user();
-    return res;
-  }
-
-  remove_user(room_id: string, user_id: string) {
-    const room = this.rooms.find((room) => room.room_id === room_id);
-    if (!room) return { msg: "Room not found" };
-    const res = room.remove_user(user_id);
+    const res = room.joinRoom(rtcSession);
     return res;
   }
 

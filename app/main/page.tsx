@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const MainPage = () => {
   const [roomId, setRoomId] = useState<null | string>(null);
@@ -8,24 +8,40 @@ const MainPage = () => {
   const peerConnectionRef = useRef<null | RTCPeerConnection>(null);
 
   useEffect(() => {
-    if (!peerConnectionRef.current) {
-      peerConnectionRef.current = new RTCPeerConnection({
-        iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
-      });
-    }
-    console.log(peerConnectionRef.current);
+    const initPeer = async () => {
+      if (!peerConnectionRef.current) {
+        peerConnectionRef.current = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+      }
+    };
+
+    initPeer();
   }, []);
 
   const handleCreateRoom = async () => {
+    const pc = peerConnectionRef.current;
+    if (!pc || !pc.localDescription) return alert("Peer connection not ready");
+
+    if (!peerConnectionRef.current) return;
+    const offer = await peerConnectionRef.current.createOffer();
+    await peerConnectionRef.current.setLocalDescription(offer);
+
     const res = await fetch("/api/create-room", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offer: pc.localDescription }),
     });
+
     const jsonRes = await res.json();
-    console.log("Create Room clicked", jsonRes);
+    console.log("✅ Room created:", jsonRes);
   };
 
   const handleJoinRoom = async () => {
     if (!roomId) return alert("Enter a room ID to join");
+    if (!peerConnectionRef.current) return;
+    const answer = await peerConnectionRef.current.createAnswer();
+    await peerConnectionRef.current.setLocalDescription(answer);
     const res = await fetch("/api/join-room", {
       method: "POST",
       body: JSON.stringify({ room_id: roomId }),
